@@ -32,8 +32,9 @@ type (
 )
 
 func (s *server) Subscribe(req *pubsub.SubscriptionRequest, stream pubsub.Remote_SubscribeServer) error {
+	ctx := stream.Context()
 	for {
-		msgout, err := s.sqscli.ReceiveMessage(context.Background(), &sqs.ReceiveMessageInput{
+		msgout, err := s.sqscli.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 			QueueUrl: ptr.String(req.Topic),
 		})
 		if err != nil {

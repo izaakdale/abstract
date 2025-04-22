@@ -1,5 +1,5 @@
 gen:
-	protoc api/pubsub/v1/*.proto --go_out=. --go-grpc_out=.
+	protoc api/*/*/*.proto --go_out=. --go-grpc_out=.
 
 client:
 	go run cmd/client/main.go
