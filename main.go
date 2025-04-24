@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/izaakdale/abstract/cmd/server/app"
+	"github.com/izaakdale/abstract/internal/server/app"
 )
 
 func main() {
