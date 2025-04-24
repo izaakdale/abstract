@@ -15,7 +15,7 @@ func main() {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	client := pubsub.NewRemoteClient(conn)
+	client := pubsub.NewPubSubClient(conn)
 
 	// req := &pubsub.SubscriptionRequest{
 	// 	Topic: "abstract-queue",

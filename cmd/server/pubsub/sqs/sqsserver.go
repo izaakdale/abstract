@@ -1,20 +1,14 @@
-package main
+package sqsserver
 
 import (
 	"context"
-	"log"
-	"net"
 
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/smithy-go/ptr"
 	pubsub "github.com/izaakdale/abstract/api/pubsub/v1"
-	"github.com/kelseyhightower/envconfig"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
-var _ pubsub.RemoteServer = (*server)(nil)
+var _ pubsub.PubSubServer = (*serverSQS)(nil)
 
 type (
 	Specification struct {
@@ -25,13 +19,19 @@ type (
 		DeleteMessage(ctx context.Context, params *sqs.DeleteMessageInput, optFns ...func(*sqs.Options)) (*sqs.DeleteMessageOutput, error)
 		SendMessage(ctx context.Context, params *sqs.SendMessageInput, optFns ...func(*sqs.Options)) (*sqs.SendMessageOutput, error)
 	}
-	server struct {
+	serverSQS struct {
 		sqscli SQSAPI
-		pubsub.UnimplementedRemoteServer
+		pubsub.UnimplementedPubSubServer
 	}
 )
 
-func (s *server) Subscribe(req *pubsub.SubscriptionRequest, stream pubsub.Remote_SubscribeServer) error {
+func New(s SQSAPI) *serverSQS {
+	return &serverSQS{
+		sqscli: s,
+	}
+}
+
+func (s *serverSQS) Subscribe(req *pubsub.SubscriptionRequest, stream pubsub.PubSub_SubscribeServer) error {
 	ctx := stream.Context()
 	for {
 		msgout, err := s.sqscli.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
@@ -53,7 +53,7 @@ func (s *server) Subscribe(req *pubsub.SubscriptionRequest, stream pubsub.Remote
 	}
 }
 
-func (s *server) Ack(ctx context.Context, req *pubsub.AckRequest) (*pubsub.AckResponse, error) {
+func (s *serverSQS) Ack(ctx context.Context, req *pubsub.AckRequest) (*pubsub.AckResponse, error) {
 	if _, err := s.sqscli.DeleteMessage(ctx, &sqs.DeleteMessageInput{
 		QueueUrl:      ptr.String(req.Topic),
 		ReceiptHandle: ptr.String(req.AckId),
@@ -63,7 +63,7 @@ func (s *server) Ack(ctx context.Context, req *pubsub.AckRequest) (*pubsub.AckRe
 	return &pubsub.AckResponse{}, nil
 }
 
-func (s *server) Publish(ctx context.Context, req *pubsub.PublishRequest) (*pubsub.PublishResponse, error) {
+func (s *serverSQS) Publish(ctx context.Context, req *pubsub.PublishRequest) (*pubsub.PublishResponse, error) {
 	_, err := s.sqscli.SendMessage(ctx, &sqs.SendMessageInput{
 		QueueUrl:    ptr.String(req.Topic),
 		MessageBody: ptr.String(string(req.Body)),
@@ -72,36 +72,4 @@ func (s *server) Publish(ctx context.Context, req *pubsub.PublishRequest) (*pubs
 		return nil, err
 	}
 	return &pubsub.PublishResponse{}, nil
-}
-
-func main() {
-	var spec Specification
-	if err := envconfig.Process("", &spec); err != nil {
-		log.Fatalf("Failed to process env: %v", err)
-	}
-
-	lis, err := net.Listen("tcp", spec.ListenAddr)
-	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
-	}
-
-	cfg, err := config.LoadDefaultConfig(context.Background())
-	if err != nil {
-		panic(err)
-	}
-	sqscli := sqs.NewFromConfig(cfg)
-
-	// create a server
-	s := &server{
-		sqscli: sqscli,
-	}
-
-	// register the server
-	gsrv := grpc.NewServer()
-	pubsub.RegisterRemoteServer(gsrv, s)
-
-	reflection.Register(gsrv)
-	// serve the server
-	log.Printf("grpc serving at: %s", lis.Addr())
-	gsrv.Serve(lis)
 }

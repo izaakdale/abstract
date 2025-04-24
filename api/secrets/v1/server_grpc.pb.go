@@ -18,86 +18,86 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// RemoteClient is the client API for Remote service.
+// SecretsClient is the client API for Secrets service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type RemoteClient interface {
+type SecretsClient interface {
 	FetchSecret(ctx context.Context, in *FetchSecretRequest, opts ...grpc.CallOption) (*FetchSecretResponse, error)
 }
 
-type remoteClient struct {
+type secretsClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewRemoteClient(cc grpc.ClientConnInterface) RemoteClient {
-	return &remoteClient{cc}
+func NewSecretsClient(cc grpc.ClientConnInterface) SecretsClient {
+	return &secretsClient{cc}
 }
 
-func (c *remoteClient) FetchSecret(ctx context.Context, in *FetchSecretRequest, opts ...grpc.CallOption) (*FetchSecretResponse, error) {
+func (c *secretsClient) FetchSecret(ctx context.Context, in *FetchSecretRequest, opts ...grpc.CallOption) (*FetchSecretResponse, error) {
 	out := new(FetchSecretResponse)
-	err := c.cc.Invoke(ctx, "/secrets.Remote/FetchSecret", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/secrets.Secrets/FetchSecret", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// RemoteServer is the server API for Remote service.
-// All implementations must embed UnimplementedRemoteServer
+// SecretsServer is the server API for Secrets service.
+// All implementations must embed UnimplementedSecretsServer
 // for forward compatibility
-type RemoteServer interface {
+type SecretsServer interface {
 	FetchSecret(context.Context, *FetchSecretRequest) (*FetchSecretResponse, error)
-	mustEmbedUnimplementedRemoteServer()
+	mustEmbedUnimplementedSecretsServer()
 }
 
-// UnimplementedRemoteServer must be embedded to have forward compatible implementations.
-type UnimplementedRemoteServer struct {
+// UnimplementedSecretsServer must be embedded to have forward compatible implementations.
+type UnimplementedSecretsServer struct {
 }
 
-func (UnimplementedRemoteServer) FetchSecret(context.Context, *FetchSecretRequest) (*FetchSecretResponse, error) {
+func (UnimplementedSecretsServer) FetchSecret(context.Context, *FetchSecretRequest) (*FetchSecretResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FetchSecret not implemented")
 }
-func (UnimplementedRemoteServer) mustEmbedUnimplementedRemoteServer() {}
+func (UnimplementedSecretsServer) mustEmbedUnimplementedSecretsServer() {}
 
-// UnsafeRemoteServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to RemoteServer will
+// UnsafeSecretsServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to SecretsServer will
 // result in compilation errors.
-type UnsafeRemoteServer interface {
-	mustEmbedUnimplementedRemoteServer()
+type UnsafeSecretsServer interface {
+	mustEmbedUnimplementedSecretsServer()
 }
 
-func RegisterRemoteServer(s grpc.ServiceRegistrar, srv RemoteServer) {
-	s.RegisterService(&Remote_ServiceDesc, srv)
+func RegisterSecretsServer(s grpc.ServiceRegistrar, srv SecretsServer) {
+	s.RegisterService(&Secrets_ServiceDesc, srv)
 }
 
-func _Remote_FetchSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Secrets_FetchSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(FetchSecretRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RemoteServer).FetchSecret(ctx, in)
+		return srv.(SecretsServer).FetchSecret(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/secrets.Remote/FetchSecret",
+		FullMethod: "/secrets.Secrets/FetchSecret",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RemoteServer).FetchSecret(ctx, req.(*FetchSecretRequest))
+		return srv.(SecretsServer).FetchSecret(ctx, req.(*FetchSecretRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Remote_ServiceDesc is the grpc.ServiceDesc for Remote service.
+// Secrets_ServiceDesc is the grpc.ServiceDesc for Secrets service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Remote_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "secrets.Remote",
-	HandlerType: (*RemoteServer)(nil),
+var Secrets_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "secrets.Secrets",
+	HandlerType: (*SecretsServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "FetchSecret",
-			Handler:    _Remote_FetchSecret_Handler,
+			Handler:    _Secrets_FetchSecret_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

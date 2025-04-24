@@ -1,19 +1,14 @@
-package main
+package rmqserver
 
 import (
 	"context"
-	"log"
-	"net"
 	"strconv"
 
 	pubsub "github.com/izaakdale/abstract/api/pubsub/v1"
-	"github.com/kelseyhightower/envconfig"
 	"github.com/streadway/amqp"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 )
 
-var _ pubsub.RemoteServer = (*server)(nil)
+var _ pubsub.PubSubServer = (*server)(nil)
 
 type (
 	Specification struct {
@@ -29,11 +24,17 @@ type (
 	}
 	server struct {
 		rmq RabbitMQAPI
-		pubsub.UnimplementedRemoteServer
+		pubsub.UnimplementedPubSubServer
 	}
 )
 
-func (s *server) Subscribe(req *pubsub.SubscriptionRequest, stream pubsub.Remote_SubscribeServer) error {
+func New(rmq RabbitMQAPI) pubsub.PubSubServer {
+	return &server{
+		rmq: rmq,
+	}
+}
+
+func (s *server) Subscribe(req *pubsub.SubscriptionRequest, stream pubsub.PubSub_SubscribeServer) error {
 	_, err := s.rmq.QueueDeclare(
 		req.Topic,
 		true,  // durable
@@ -115,42 +116,4 @@ func (s *server) Publish(ctx context.Context, req *pubsub.PublishRequest) (*pubs
 		return nil, err
 	}
 	return &pubsub.PublishResponse{}, nil
-}
-
-func main() {
-	var spec Specification
-	if err := envconfig.Process("", &spec); err != nil {
-		log.Fatalf("Failed to process env: %v", err)
-	}
-
-	lis, err := net.Listen("tcp", spec.ListenAddr)
-	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
-	}
-
-	conn, err := amqp.Dial("amqp://user:password@localhost:5672/")
-	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
-	}
-	defer conn.Close()
-
-	ch, err := conn.Channel()
-	if err != nil {
-		log.Fatalf("Failed to open a channel: %v", err)
-	}
-	defer ch.Close()
-
-	// create a server
-	s := &server{
-		rmq: ch,
-	}
-
-	// register the server
-	gsrv := grpc.NewServer()
-	pubsub.RegisterRemoteServer(gsrv, s)
-
-	reflection.Register(gsrv)
-	// serve the server
-	log.Printf("grpc serving at: %s", lis.Addr())
-	gsrv.Serve(lis)
 }

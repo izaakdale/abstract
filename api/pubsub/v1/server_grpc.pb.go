@@ -18,29 +18,29 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// RemoteClient is the client API for Remote service.
+// PubSubClient is the client API for PubSub service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type RemoteClient interface {
-	Subscribe(ctx context.Context, in *SubscriptionRequest, opts ...grpc.CallOption) (Remote_SubscribeClient, error)
+type PubSubClient interface {
+	Subscribe(ctx context.Context, in *SubscriptionRequest, opts ...grpc.CallOption) (PubSub_SubscribeClient, error)
 	Ack(ctx context.Context, in *AckRequest, opts ...grpc.CallOption) (*AckResponse, error)
 	Publish(ctx context.Context, in *PublishRequest, opts ...grpc.CallOption) (*PublishResponse, error)
 }
 
-type remoteClient struct {
+type pubSubClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewRemoteClient(cc grpc.ClientConnInterface) RemoteClient {
-	return &remoteClient{cc}
+func NewPubSubClient(cc grpc.ClientConnInterface) PubSubClient {
+	return &pubSubClient{cc}
 }
 
-func (c *remoteClient) Subscribe(ctx context.Context, in *SubscriptionRequest, opts ...grpc.CallOption) (Remote_SubscribeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Remote_ServiceDesc.Streams[0], "/pubsub.Remote/Subscribe", opts...)
+func (c *pubSubClient) Subscribe(ctx context.Context, in *SubscriptionRequest, opts ...grpc.CallOption) (PubSub_SubscribeClient, error) {
+	stream, err := c.cc.NewStream(ctx, &PubSub_ServiceDesc.Streams[0], "/pubsub.PubSub/Subscribe", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &remoteSubscribeClient{stream}
+	x := &pubSubSubscribeClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -50,16 +50,16 @@ func (c *remoteClient) Subscribe(ctx context.Context, in *SubscriptionRequest, o
 	return x, nil
 }
 
-type Remote_SubscribeClient interface {
+type PubSub_SubscribeClient interface {
 	Recv() (*Event, error)
 	grpc.ClientStream
 }
 
-type remoteSubscribeClient struct {
+type pubSubSubscribeClient struct {
 	grpc.ClientStream
 }
 
-func (x *remoteSubscribeClient) Recv() (*Event, error) {
+func (x *pubSubSubscribeClient) Recv() (*Event, error) {
 	m := new(Event)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -67,137 +67,137 @@ func (x *remoteSubscribeClient) Recv() (*Event, error) {
 	return m, nil
 }
 
-func (c *remoteClient) Ack(ctx context.Context, in *AckRequest, opts ...grpc.CallOption) (*AckResponse, error) {
+func (c *pubSubClient) Ack(ctx context.Context, in *AckRequest, opts ...grpc.CallOption) (*AckResponse, error) {
 	out := new(AckResponse)
-	err := c.cc.Invoke(ctx, "/pubsub.Remote/Ack", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/pubsub.PubSub/Ack", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *remoteClient) Publish(ctx context.Context, in *PublishRequest, opts ...grpc.CallOption) (*PublishResponse, error) {
+func (c *pubSubClient) Publish(ctx context.Context, in *PublishRequest, opts ...grpc.CallOption) (*PublishResponse, error) {
 	out := new(PublishResponse)
-	err := c.cc.Invoke(ctx, "/pubsub.Remote/Publish", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/pubsub.PubSub/Publish", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// RemoteServer is the server API for Remote service.
-// All implementations must embed UnimplementedRemoteServer
+// PubSubServer is the server API for PubSub service.
+// All implementations must embed UnimplementedPubSubServer
 // for forward compatibility
-type RemoteServer interface {
-	Subscribe(*SubscriptionRequest, Remote_SubscribeServer) error
+type PubSubServer interface {
+	Subscribe(*SubscriptionRequest, PubSub_SubscribeServer) error
 	Ack(context.Context, *AckRequest) (*AckResponse, error)
 	Publish(context.Context, *PublishRequest) (*PublishResponse, error)
-	mustEmbedUnimplementedRemoteServer()
+	mustEmbedUnimplementedPubSubServer()
 }
 
-// UnimplementedRemoteServer must be embedded to have forward compatible implementations.
-type UnimplementedRemoteServer struct {
+// UnimplementedPubSubServer must be embedded to have forward compatible implementations.
+type UnimplementedPubSubServer struct {
 }
 
-func (UnimplementedRemoteServer) Subscribe(*SubscriptionRequest, Remote_SubscribeServer) error {
+func (UnimplementedPubSubServer) Subscribe(*SubscriptionRequest, PubSub_SubscribeServer) error {
 	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
 }
-func (UnimplementedRemoteServer) Ack(context.Context, *AckRequest) (*AckResponse, error) {
+func (UnimplementedPubSubServer) Ack(context.Context, *AckRequest) (*AckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ack not implemented")
 }
-func (UnimplementedRemoteServer) Publish(context.Context, *PublishRequest) (*PublishResponse, error) {
+func (UnimplementedPubSubServer) Publish(context.Context, *PublishRequest) (*PublishResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Publish not implemented")
 }
-func (UnimplementedRemoteServer) mustEmbedUnimplementedRemoteServer() {}
+func (UnimplementedPubSubServer) mustEmbedUnimplementedPubSubServer() {}
 
-// UnsafeRemoteServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to RemoteServer will
+// UnsafePubSubServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to PubSubServer will
 // result in compilation errors.
-type UnsafeRemoteServer interface {
-	mustEmbedUnimplementedRemoteServer()
+type UnsafePubSubServer interface {
+	mustEmbedUnimplementedPubSubServer()
 }
 
-func RegisterRemoteServer(s grpc.ServiceRegistrar, srv RemoteServer) {
-	s.RegisterService(&Remote_ServiceDesc, srv)
+func RegisterPubSubServer(s grpc.ServiceRegistrar, srv PubSubServer) {
+	s.RegisterService(&PubSub_ServiceDesc, srv)
 }
 
-func _Remote_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _PubSub_Subscribe_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SubscriptionRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(RemoteServer).Subscribe(m, &remoteSubscribeServer{stream})
+	return srv.(PubSubServer).Subscribe(m, &pubSubSubscribeServer{stream})
 }
 
-type Remote_SubscribeServer interface {
+type PubSub_SubscribeServer interface {
 	Send(*Event) error
 	grpc.ServerStream
 }
 
-type remoteSubscribeServer struct {
+type pubSubSubscribeServer struct {
 	grpc.ServerStream
 }
 
-func (x *remoteSubscribeServer) Send(m *Event) error {
+func (x *pubSubSubscribeServer) Send(m *Event) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Remote_Ack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PubSub_Ack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AckRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RemoteServer).Ack(ctx, in)
+		return srv.(PubSubServer).Ack(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/pubsub.Remote/Ack",
+		FullMethod: "/pubsub.PubSub/Ack",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RemoteServer).Ack(ctx, req.(*AckRequest))
+		return srv.(PubSubServer).Ack(ctx, req.(*AckRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Remote_Publish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _PubSub_Publish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PublishRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RemoteServer).Publish(ctx, in)
+		return srv.(PubSubServer).Publish(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/pubsub.Remote/Publish",
+		FullMethod: "/pubsub.PubSub/Publish",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RemoteServer).Publish(ctx, req.(*PublishRequest))
+		return srv.(PubSubServer).Publish(ctx, req.(*PublishRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Remote_ServiceDesc is the grpc.ServiceDesc for Remote service.
+// PubSub_ServiceDesc is the grpc.ServiceDesc for PubSub service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Remote_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "pubsub.Remote",
-	HandlerType: (*RemoteServer)(nil),
+var PubSub_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "pubsub.PubSub",
+	HandlerType: (*PubSubServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "Ack",
-			Handler:    _Remote_Ack_Handler,
+			Handler:    _PubSub_Ack_Handler,
 		},
 		{
 			MethodName: "Publish",
-			Handler:    _Remote_Publish_Handler,
+			Handler:    _PubSub_Publish_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Subscribe",
-			Handler:       _Remote_Subscribe_Handler,
+			Handler:       _PubSub_Subscribe_Handler,
 			ServerStreams: true,
 		},
 	},

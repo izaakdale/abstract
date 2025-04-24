@@ -3,16 +3,24 @@ syntax = "proto3";
 package pubsub;
 option go_package="api/pubsub/v1";
 
-service Remote {
+service PubSub {
   rpc Subscribe(SubscriptionRequest) returns (stream Event);
   rpc Ack(AckRequest) returns (AckResponse);
   rpc Publish(PublishRequest) returns (PublishResponse);
+}
+
+enum Protocol {
+  PROTOCOL_UNSPECIFIED = 0;
+  SQS = 1;
+  SERVICEBUS = 2;
+  RABBITMQ = 3;
 }
 
 // subscribe
 message SubscriptionRequest {
   string topic = 1;
   string consumer_id = 2;
+  Protocol protocol = 3;
 }
 message Event {
   bytes body = 1;
@@ -28,6 +36,7 @@ message AckRequest {
   string topic = 1;
   string ack_id = 2;
   AckResult result = 3;
+  Protocol protocol = 4;
 }
 message AckResponse {}
 
@@ -35,5 +44,6 @@ message AckResponse {}
 message PublishRequest {
   string topic = 1;
   bytes body = 2;
+  Protocol protocol = 3;
 }
 message PublishResponse {}
